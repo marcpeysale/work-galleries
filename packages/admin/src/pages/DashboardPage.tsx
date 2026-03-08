@@ -12,6 +12,7 @@ export const DashboardPage = () => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     Promise.all([
@@ -19,6 +20,7 @@ export const DashboardPage = () => {
       api.get<User[]>('/admin/users'),
     ])
       .then(([p, u]) => { setProjects(p); setUsers(u); })
+      .catch((err) => setError(err instanceof Error ? err.message : 'Erreur lors du chargement'))
       .finally(() => setLoading(false));
   }, []);
 
@@ -33,6 +35,12 @@ export const DashboardPage = () => {
           Bonjour, {user?.firstName}
         </h1>
       </div>
+
+      {error && (
+        <div className="mb-6 px-4 py-3 border border-red-900/50 text-red-400 bg-red-900/10 text-sm">
+          {error}
+        </div>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
         <StatCard icon={FolderOpen} label="Projets total" value={loading ? '—' : String(projects.length)} />

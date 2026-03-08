@@ -1,4 +1,4 @@
-import { signIn, signOut, getCurrentUser, fetchUserAttributes, confirmSignIn } from 'aws-amplify/auth';
+import { signIn, signOut, getCurrentUser, fetchUserAttributes, fetchAuthSession, confirmSignIn } from 'aws-amplify/auth';
 
 export interface AuthUser {
   sub: string;
@@ -23,9 +23,12 @@ export const logout = async () => {
 
 export const getAuthUser = async (): Promise<AuthUser | null> => {
   try {
-    const user = await getCurrentUser();
-    const attrs = await fetchUserAttributes();
-    const groups: string[] = (attrs['custom:groups'] ?? '').split(',').filter(Boolean);
+    const [user, attrs, session] = await Promise.all([
+      getCurrentUser(),
+      fetchUserAttributes(),
+      fetchAuthSession(),
+    ]);
+    const groups = (session.tokens?.accessToken?.payload['cognito:groups'] as string[] | undefined) ?? [];
     return {
       sub: user.userId,
       email: attrs['email'] ?? '',

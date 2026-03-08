@@ -43,7 +43,7 @@ export class ApiStack extends cdk.Stack {
       EXPORTS_BUCKET: props.exportsBucket.bucketName,
       USER_POOL_ID: props.userPool.userPoolId,
       REGION: this.region,
-      ALLOWED_ORIGINS: 'https://admin.peysale.com,https://gallery.peysale.com',
+      ALLOWED_ORIGINS: 'https://admin.peysale.com,https://gallery.peysale.com,http://localhost:5173,http://localhost:5174',
     };
 
     const lambdaDefaults = {
@@ -128,7 +128,12 @@ export class ApiStack extends cdk.Stack {
           apigateway.CorsHttpMethod.DELETE,
           apigateway.CorsHttpMethod.OPTIONS,
         ],
-        allowOrigins: ['https://admin.peysale.com', 'https://gallery.peysale.com'],
+        allowOrigins: [
+          'https://admin.peysale.com',
+          'https://gallery.peysale.com',
+          'http://localhost:5173',
+          'http://localhost:5174',
+        ],
         maxAge: cdk.Duration.hours(1),
       },
     });
