@@ -40,7 +40,7 @@ export class AuthStack extends cdk.Stack {
           <p>Connectez-vous sur <a href="https://gallery.peysale.com">gallery.peysale.com</a></p>
           <p>Vous serez invité à changer votre mot de passe à la première connexion.</p>
         `,
-        smsMessage: 'Votre code d\'invitation : {####}',
+        smsMessage: 'Bonjour {username}, votre code d\'accès Marc Peysale : {####}',
       },
       removalPolicy: cdk.RemovalPolicy.RETAIN,
     });
