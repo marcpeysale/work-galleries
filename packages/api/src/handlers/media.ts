@@ -19,13 +19,13 @@ export const handler = async (
   event: APIGatewayProxyEventV2WithJWTAuthorizer,
 ): Promise<APIGatewayProxyResultV2> => {
   const origin = event.headers['origin'];
-  const auth = getAuthContext(event);
-  const method = event.requestContext.http.method;
-  const path = event.requestContext.http.path;
-  const projectId = event.pathParameters?.['projectId'];
-  const mediaId = event.pathParameters?.['mediaId'];
 
   try {
+    const auth = await getAuthContext(event);
+    const method = event.requestContext.http.method;
+    const path = event.requestContext.http.path;
+    const projectId = event.pathParameters?.['projectId'];
+    const mediaId = event.pathParameters?.['mediaId'];
     if (method === 'POST' && projectId && path.endsWith('/upload-url')) {
       if (!auth.isAdmin) return res.forbidden(origin);
       const { filename, type, contentType }: { filename: string; type: MediaType; contentType: string } =

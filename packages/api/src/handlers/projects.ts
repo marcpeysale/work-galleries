@@ -10,12 +10,13 @@ export const handler = async (
   event: APIGatewayProxyEventV2WithJWTAuthorizer,
 ): Promise<APIGatewayProxyResultV2> => {
   const origin = event.headers['origin'];
-  const auth = getAuthContext(event);
-  const method = event.requestContext.http.method;
-  const path = event.requestContext.http.path;
-  const projectId = event.pathParameters?.['projectId'];
 
   try {
+    const auth = await getAuthContext(event);
+    const method = event.requestContext.http.method;
+    const path = event.requestContext.http.path;
+    const projectId = event.pathParameters?.['projectId'];
+
     if (path.startsWith('/admin') && !auth.isAdmin) return res.forbidden(origin);
 
     if (method === 'GET' && path === '/admin/projects') {

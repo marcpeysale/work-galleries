@@ -18,35 +18,36 @@ export const handler = async (
   event: APIGatewayProxyEventV2WithJWTAuthorizer,
 ): Promise<APIGatewayProxyResultV2> => {
   const origin = event.headers['origin'];
-  const auth = getAuthContext(event);
-  const projectId = event.pathParameters?.['projectId'];
-
-  if (!projectId) return res.badRequest('projectId manquant', origin);
-
-  if (!auth.isAdmin) {
-    const accessCheck = await ddb.send(new GetCommand({
-      TableName: TABLE,
-      Key: { PK: `USER#${auth.sub}`, SK: `PROJECT#${projectId}` },
-    }));
-    if (!accessCheck.Item) return res.forbidden(origin);
-  }
-
-  const mediaResult = await ddb.send(new QueryCommand({
-    TableName: TABLE,
-    KeyConditionExpression: 'PK = :pk AND begins_with(SK, :sk)',
-    ExpressionAttributeValues: { ':pk': `PROJECT#${projectId}`, ':sk': 'MEDIA#' },
-  }));
-
-  const items = mediaResult.Items ?? [];
-  if (items.length === 0) return res.badRequest('Aucun média dans ce projet', origin);
-
-  const projectResult = await ddb.send(new GetCommand({
-    TableName: TABLE,
-    Key: { PK: `PROJECT#${projectId}`, SK: 'METADATA' },
-  }));
-  const projectName = (projectResult.Item?.['name'] as string | undefined) ?? projectId;
 
   try {
+    const auth = await getAuthContext(event);
+    const projectId = event.pathParameters?.['projectId'];
+
+    if (!projectId) return res.badRequest('projectId manquant', origin);
+
+    if (!auth.isAdmin) {
+      const accessCheck = await ddb.send(new GetCommand({
+        TableName: TABLE,
+        Key: { PK: `USER#${auth.sub}`, SK: `PROJECT#${projectId}` },
+      }));
+      if (!accessCheck.Item) return res.forbidden(origin);
+    }
+
+    const mediaResult = await ddb.send(new QueryCommand({
+      TableName: TABLE,
+      KeyConditionExpression: 'PK = :pk AND begins_with(SK, :sk)',
+      ExpressionAttributeValues: { ':pk': `PROJECT#${projectId}`, ':sk': 'MEDIA#' },
+    }));
+
+    const items = mediaResult.Items ?? [];
+    if (items.length === 0) return res.badRequest('Aucun média dans ce projet', origin);
+
+    const projectResult = await ddb.send(new GetCommand({
+      TableName: TABLE,
+      Key: { PK: `PROJECT#${projectId}`, SK: 'METADATA' },
+    }));
+    const projectName = (projectResult.Item?.['name'] as string | undefined) ?? projectId;
+
     const exportKey = `exports/${projectId}/${randomUUID()}.zip`;
     const passThrough = new PassThrough();
 
@@ -78,8 +79,7 @@ export const handler = async (
       { expiresIn: DOWNLOAD_URL_TTL },
     );
 
-    const expiresAt = new Date(Date.now() + DOWNLOAD_URL_TTL * 1000).toISOString();
-    return res.ok({ downloadUrl, expiresAt }, origin);
+    return res.ok({ downloadUrl, expiresAt: new Date(Date.now() + DOWNLOAD_URL_TTL * 1000).toISOString() }, origin);
   } catch (err) {
     console.error(err);
     return res.internalError('Erreur lors de la génération du ZIP', origin);

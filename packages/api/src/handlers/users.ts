@@ -14,7 +14,6 @@ import { ddb, TABLE } from '../lib/dynamo';
 import { getAuthContext } from '../lib/auth';
 import * as res from '../lib/response';
 import type { CreateUserInput } from '@gallery/shared';
-import { randomUUID } from 'crypto';
 
 const cognito = new CognitoIdentityProviderClient({ region: process.env.REGION });
 const USER_POOL_ID = process.env.USER_POOL_ID!;
@@ -23,15 +22,15 @@ export const handler = async (
   event: APIGatewayProxyEventV2WithJWTAuthorizer,
 ): Promise<APIGatewayProxyResultV2> => {
   const origin = event.headers['origin'];
-  const auth = getAuthContext(event);
-
-  if (!auth.isAdmin) return res.forbidden(origin);
-
-  const method = event.requestContext.http.method;
-  const path = event.requestContext.http.path;
-  const userId = event.pathParameters?.['userId'];
 
   try {
+    const auth = await getAuthContext(event);
+    if (!auth.isAdmin) return res.forbidden(origin);
+
+    const method = event.requestContext.http.method;
+    const path = event.requestContext.http.path;
+    const userId = event.pathParameters?.['userId'];
+
     if (method === 'GET' && path === '/admin/users') {
       const result = await cognito.send(new ListUsersCommand({ UserPoolId: USER_POOL_ID }));
       const users = (result.Users ?? []).map((u) => ({
@@ -118,7 +117,6 @@ export const handler = async (
         ddb.send(new DeleteCommand({ TableName: TABLE, Key: { PK: item['PK'], SK: item['SK'] } }))
       );
       await Promise.all(deleteOps);
-
       const putOps = projectIds.map((pid) =>
         ddb.send(new PutCommand({
           TableName: TABLE,
