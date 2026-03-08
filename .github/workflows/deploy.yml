@@ -1,0 +1,148 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  NODE_VERSION: '20'
+  AWS_REGION: eu-west-3
+
+jobs:
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      infra: ${{ steps.filter.outputs.infra }}
+      api: ${{ steps.filter.outputs.api }}
+      admin: ${{ steps.filter.outputs.admin }}
+      gallery: ${{ steps.filter.outputs.gallery }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            infra:
+              - 'infra/**'
+              - 'packages/shared/**'
+            api:
+              - 'packages/api/**'
+              - 'packages/shared/**'
+            admin:
+              - 'packages/admin/**'
+              - 'packages/shared/**'
+            gallery:
+              - 'packages/gallery/**'
+              - 'packages/shared/**'
+
+  deploy-infra:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.infra == 'true' || needs.detect-changes.outputs.api == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - uses: pnpm/action-setup@v4
+        with:
+          version: latest
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Build API
+        run: pnpm --filter @gallery/api build
+      - name: Deploy CDK stacks
+        run: pnpm --filter @gallery/infra deploy
+        env:
+          CDK_DEFAULT_ACCOUNT: ${{ secrets.AWS_ACCOUNT_ID }}
+          CDK_DEFAULT_REGION: ${{ env.AWS_REGION }}
+
+  deploy-admin:
+    needs: [detect-changes, deploy-infra]
+    if: |
+      always() &&
+      !failure() &&
+      needs.detect-changes.outputs.admin == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - uses: pnpm/action-setup@v4
+        with:
+          version: latest
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Build admin SPA
+        run: pnpm --filter @gallery/admin build
+        env:
+          VITE_USER_POOL_ID: ${{ secrets.VITE_USER_POOL_ID }}
+          VITE_USER_POOL_CLIENT_ID: ${{ secrets.VITE_USER_POOL_CLIENT_ID }}
+          VITE_API_URL: ${{ secrets.VITE_API_URL }}
+      - name: Deploy to S3
+        run: |
+          aws s3 sync packages/admin/dist s3://gallery-admin-${{ secrets.AWS_ACCOUNT_ID }} \
+            --delete --cache-control "no-cache"
+      - name: Invalidate CloudFront
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id ${{ secrets.ADMIN_DISTRIBUTION_ID }} \
+            --paths "/*"
+
+  deploy-gallery:
+    needs: [detect-changes, deploy-infra]
+    if: |
+      always() &&
+      !failure() &&
+      needs.detect-changes.outputs.gallery == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - uses: pnpm/action-setup@v4
+        with:
+          version: latest
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Build gallery SPA
+        run: pnpm --filter @gallery/gallery build
+        env:
+          VITE_USER_POOL_ID: ${{ secrets.VITE_USER_POOL_ID }}
+          VITE_USER_POOL_CLIENT_ID: ${{ secrets.VITE_USER_POOL_CLIENT_ID }}
+          VITE_API_URL: ${{ secrets.VITE_API_URL }}
+      - name: Deploy to S3
+        run: |
+          aws s3 sync packages/gallery/dist s3://gallery-client-${{ secrets.AWS_ACCOUNT_ID }} \
+            --delete --cache-control "no-cache"
+      - name: Invalidate CloudFront
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id ${{ secrets.GALLERY_DISTRIBUTION_ID }} \
+            --paths "/*"

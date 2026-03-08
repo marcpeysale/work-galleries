@@ -1,0 +1,27 @@
+{
+  "name": "@gallery/infra",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc -w",
+    "typecheck": "tsc --noEmit",
+    "deploy": "cdk deploy --all --require-approval never",
+    "deploy:auth": "cdk deploy GalleryAuthStack --require-approval never",
+    "deploy:storage": "cdk deploy GalleryStorageStack --require-approval never",
+    "deploy:api": "cdk deploy GalleryApiStack --require-approval never",
+    "deploy:frontend": "cdk deploy GalleryFrontendStack --require-approval never",
+    "diff": "cdk diff",
+    "synth": "cdk synth",
+    "destroy": "cdk destroy --all"
+  },
+  "dependencies": {
+    "aws-cdk-lib": "^2.130.0",
+    "constructs": "^10.3.0"
+  },
+  "devDependencies": {
+    "aws-cdk": "^2.130.0",
+    "typescript": "^5.4.5",
+    "@types/node": "^20.0.0"
+  }
+}
