@@ -64,7 +64,7 @@ jobs:
       - name: Build API
         run: pnpm --filter @gallery/api build
       - name: Deploy CDK stacks
-        run: pnpm --filter @gallery/infra deploy
+        run: pnpm --filter @gallery/infra run deploy
         env:
           CDK_DEFAULT_ACCOUNT: ${{ secrets.AWS_ACCOUNT_ID }}
           CDK_DEFAULT_REGION: ${{ env.AWS_REGION }}

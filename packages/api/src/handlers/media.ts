@@ -79,7 +79,7 @@ export const handler = async (
       }));
 
       const mediaItems = await Promise.all(
-        (result.Items ?? []).map(async (item) => {
+        (result.Items ?? []).map(async (item): Promise<Record<string, unknown>> => {
           const url = MEDIA_DOMAIN
             ? `https://${MEDIA_DOMAIN}/${item['s3Key']}?token=${randomUUID()}`
             : await getSignedUrl(
