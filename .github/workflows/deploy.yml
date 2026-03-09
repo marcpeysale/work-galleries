@@ -45,6 +45,7 @@ jobs:
     needs: detect-changes
     if: needs.detect-changes.outputs.infra == 'true' || needs.detect-changes.outputs.api == 'true'
     runs-on: ubuntu-latest
+    environment: prod
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -76,6 +77,7 @@ jobs:
       !failure() &&
       needs.detect-changes.outputs.admin == 'true'
     runs-on: ubuntu-latest
+    environment: prod
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -115,6 +117,7 @@ jobs:
       !failure() &&
       needs.detect-changes.outputs.gallery == 'true'
     runs-on: ubuntu-latest
+    environment: prod
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
