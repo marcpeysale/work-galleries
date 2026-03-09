@@ -21,6 +21,8 @@ const apiStack = new ApiStack(app, 'GalleryApiStack', {
   userPoolClient: authStack.userPoolClient,
   mediaBucket: infraStack.mediaBucket,
   exportsBucket: infraStack.exportsBucket,
+  adminDistribution: infraStack.adminDistribution,
+  galleryDistribution: infraStack.galleryDistribution,
 });
 apiStack.addDependency(authStack);
 apiStack.addDependency(infraStack);

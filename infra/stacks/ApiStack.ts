@@ -5,6 +5,7 @@ import * as integrations from 'aws-cdk-lib/aws-apigatewayv2-integrations';
 import * as authorizers from 'aws-cdk-lib/aws-apigatewayv2-authorizers';
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
 import * as cognito from 'aws-cdk-lib/aws-cognito';
+import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
 import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import { Construct } from 'constructs';
@@ -14,6 +15,8 @@ interface ApiStackProps extends cdk.StackProps {
   userPoolClient: cognito.UserPoolClient;
   mediaBucket: s3.Bucket;
   exportsBucket: s3.Bucket;
+  adminDistribution: cloudfront.Distribution;
+  galleryDistribution: cloudfront.Distribution;
 }
 
 export class ApiStack extends cdk.Stack {
@@ -37,13 +40,21 @@ export class ApiStack extends cdk.Stack {
       projectionType: dynamodb.ProjectionType.ALL,
     });
 
+    const allowedOrigins = [
+      'https://admin.peysale.com',
+      'https://gallery.peysale.com',
+      `https://${props.adminDistribution.distributionDomainName}`,
+      `https://${props.galleryDistribution.distributionDomainName}`,
+      'http://localhost:5173',
+      'http://localhost:5174',
+    ];
     const environment: Record<string, string> = {
       TABLE_NAME: table.tableName,
       MEDIA_BUCKET: props.mediaBucket.bucketName,
       EXPORTS_BUCKET: props.exportsBucket.bucketName,
       USER_POOL_ID: props.userPool.userPoolId,
       REGION: this.region,
-      ALLOWED_ORIGINS: 'https://admin.peysale.com,https://gallery.peysale.com,http://localhost:5173,http://localhost:5174',
+      ALLOWED_ORIGINS: allowedOrigins.join(','),
     };
 
     const lambdaDefaults = {
@@ -136,12 +147,7 @@ export class ApiStack extends cdk.Stack {
           apigateway.CorsHttpMethod.DELETE,
           apigateway.CorsHttpMethod.OPTIONS,
         ],
-        allowOrigins: [
-          'https://admin.peysale.com',
-          'https://gallery.peysale.com',
-          'http://localhost:5173',
-          'http://localhost:5174',
-        ],
+        allowOrigins: allowedOrigins,
         maxAge: cdk.Duration.hours(1),
       },
     });
