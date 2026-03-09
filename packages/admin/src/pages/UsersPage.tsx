@@ -63,8 +63,8 @@ export const UsersPage = () => {
   };
 
   return (
-    <div className="p-8 max-w-wrap mx-auto">
-      <div className="flex items-center justify-between mb-10">
+    <div className="max-w-wrap mx-auto">
+      <div className="flex items-center justify-between mb-12">
         <div>
           <p className="text-xs text-accent font-semibold tracking-widest uppercase mb-2">Gestion</p>
           <h1 className="font-display text-4xl tracking-wider">Utilisateurs</h1>
@@ -81,8 +81,8 @@ export const UsersPage = () => {
       )}
 
       {showForm && (
-        <div className="bg-surface border border-border p-6 mb-8">
-          <h2 className="font-display text-xl tracking-wider mb-6">Nouvel utilisateur</h2>
+        <div className="bg-surface border border-border p-10 mb-10">
+          <h2 className="font-display text-xl tracking-wider mb-8">Nouvel utilisateur</h2>
           <form onSubmit={handleCreate} className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Input label="Prénom" value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} required />
             <Input label="Nom" value={form.lastName} onChange={(e) => setForm({ ...form, lastName: e.target.value })} required />
@@ -96,7 +96,7 @@ export const UsersPage = () => {
       )}
 
       <div className="bg-surface border border-border">
-        <div className="grid grid-cols-[1fr_1fr_1fr_auto] px-6 py-3 border-b border-border">
+        <div className="grid grid-cols-[1fr_1fr_1fr_auto] px-10 py-5 border-b border-border">
           <span className="text-xs text-muted font-semibold tracking-widest uppercase">Nom</span>
           <span className="text-xs text-muted font-semibold tracking-widest uppercase">Email</span>
           <span className="text-xs text-muted font-semibold tracking-widest uppercase">Statut</span>
@@ -104,14 +104,14 @@ export const UsersPage = () => {
         </div>
 
         {loading ? (
-          <p className="px-6 py-8 text-muted text-sm">Chargement…</p>
+          <p className="px-10 py-12 text-muted text-sm">Chargement…</p>
         ) : users.length === 0 ? (
-          <p className="px-6 py-8 text-muted text-sm">Aucun utilisateur.</p>
+          <p className="px-10 py-12 text-muted text-sm">Aucun utilisateur.</p>
         ) : (
           users.map((user) => {
             const isSuspended = user.status === 'suspended';
             return (
-              <div key={user.id} className="grid grid-cols-[1fr_1fr_1fr_auto] px-6 py-4 border-b border-border last:border-0 items-center">
+              <div key={user.id} className="grid grid-cols-[1fr_1fr_1fr_auto] px-10 py-6 border-b border-border last:border-0 items-center">
                 <span className="text-sm">{user.firstName} {user.lastName}</span>
                 <span className="text-sm text-muted">{user.email}</span>
                 <span className={`text-xs font-semibold tracking-wider uppercase ${isSuspended ? 'text-red-400' : 'text-green-400'}`}>

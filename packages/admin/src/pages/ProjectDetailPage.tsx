@@ -81,12 +81,12 @@ export const ProjectDetailPage = () => {
   const videos = media.filter((m) => m.type === 'video');
 
   return (
-    <div className="p-8 max-w-wrap mx-auto">
-      <button onClick={() => navigate('/projects')} className="flex items-center gap-2 text-xs text-muted hover:text-text-primary transition-colors mb-8 uppercase tracking-widest">
+    <div className="max-w-wrap mx-auto">
+      <button onClick={() => navigate('/projects')} className="flex items-center gap-2 text-xs text-muted hover:text-text-primary transition-colors mb-10 uppercase tracking-widest">
         <ArrowLeft size={14} /> Retour
       </button>
 
-      <div className="flex items-start justify-between mb-10 gap-4">
+      <div className="flex items-start justify-between mb-12 gap-6">
         <div>
           <p className="text-xs text-accent font-semibold tracking-widest uppercase mb-2">Projet</p>
           <h1 className="font-display text-4xl tracking-wider">{project.name}</h1>
@@ -128,7 +128,7 @@ export const ProjectDetailPage = () => {
       </div>
 
       {media.length === 0 ? (
-        <div className="bg-surface border border-dashed border-border flex flex-col items-center justify-center py-20 text-center">
+        <div className="bg-surface border border-dashed border-border flex flex-col items-center justify-center py-24 px-12 text-center">
           <ImageIcon size={32} className="text-faint mb-4" aria-hidden="true" />
           <p className="text-muted text-sm">Aucun média dans ce projet.</p>
           <p className="text-faint text-xs mt-1">Utilisez le bouton "Ajouter des médias" pour commencer.</p>
@@ -160,15 +160,15 @@ const MediaSection = ({
   deletingId: string | null;
   onDelete: (id: string) => void;
 }) => (
-  <div className="mb-10">
-    <div className="flex items-center gap-2 mb-4">
+  <div className="mb-14">
+    <div className="flex items-center gap-2 mb-6">
       <Icon size={15} className="text-muted" aria-hidden="true" />
       <h2 className="font-display text-xl tracking-wider">{title}</h2>
       <span className="text-xs text-faint ml-1">({items.length})</span>
     </div>
-    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
       {items.map((item) => (
-        <div key={item.id} className="relative group aspect-square bg-elevated overflow-hidden">
+        <div key={item.id} className="relative group aspect-square bg-elevated overflow-hidden rounded-sm">
           {item.type === 'photo' ? (
             <img
               src={item.url}
@@ -193,7 +193,7 @@ const MediaSection = ({
               <Trash2 size={18} />
             </button>
           </div>
-          <p className="absolute bottom-0 inset-x-0 bg-black/70 px-2 py-1 text-xs text-muted truncate opacity-0 group-hover:opacity-100 transition-opacity">
+          <p className="absolute bottom-0 inset-x-0 bg-black/70 px-3 py-2 text-xs text-muted truncate opacity-0 group-hover:opacity-100 transition-opacity">
             {item.filename}
           </p>
         </div>

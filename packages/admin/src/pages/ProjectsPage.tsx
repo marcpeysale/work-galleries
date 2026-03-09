@@ -68,8 +68,8 @@ export const ProjectsPage = () => {
   };
 
   return (
-    <div className="p-8 max-w-wrap mx-auto">
-      <div className="flex items-center justify-between mb-10">
+    <div className="max-w-wrap mx-auto">
+      <div className="flex items-center justify-between mb-12">
         <div>
           <p className="text-xs text-accent font-semibold tracking-widest uppercase mb-2">Gestion</p>
           <h1 className="font-display text-4xl tracking-wider">Projets</h1>
@@ -80,8 +80,8 @@ export const ProjectsPage = () => {
       </div>
 
       {showForm && (
-        <div className="bg-surface border border-border p-6 mb-8">
-          <h2 className="font-display text-xl tracking-wider mb-6">Nouveau projet</h2>
+        <div className="bg-surface border border-border p-10 mb-10">
+          <h2 className="font-display text-xl tracking-wider mb-8">Nouveau projet</h2>
           <form onSubmit={handleCreate} className="flex flex-col gap-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="md:col-span-3">
@@ -149,7 +149,7 @@ export const ProjectsPage = () => {
       )}
 
       <div className="bg-surface border border-border">
-        <div className="grid grid-cols-[1fr_auto_auto_auto] px-6 py-3 border-b border-border">
+        <div className="grid grid-cols-[1fr_auto_auto_auto] px-10 py-5 border-b border-border">
           <span className="text-xs text-muted font-semibold tracking-widest uppercase">Projet</span>
           <span className="text-xs text-muted font-semibold tracking-widest uppercase">Date</span>
           <span className="text-xs text-muted font-semibold tracking-widest uppercase">Statut</span>
@@ -157,12 +157,12 @@ export const ProjectsPage = () => {
         </div>
 
         {loading ? (
-          <p className="px-6 py-8 text-muted text-sm">Chargement…</p>
+          <p className="px-10 py-12 text-muted text-sm">Chargement…</p>
         ) : projects.length === 0 ? (
-          <p className="px-6 py-8 text-muted text-sm">Aucun projet.</p>
+          <p className="px-10 py-12 text-muted text-sm">Aucun projet.</p>
         ) : (
           projects.map((project) => (
-            <div key={project.id} className="grid grid-cols-[1fr_auto_auto_auto] px-6 py-4 border-b border-border last:border-0 items-center gap-4">
+            <div key={project.id} className="grid grid-cols-[1fr_auto_auto_auto] px-10 py-6 border-b border-border last:border-0 items-center gap-4">
               <div>
                 <p className="text-sm font-medium">{project.name}</p>
                 <p className="text-xs text-muted mt-0.5">{project.clientInfo.firstName} {project.clientInfo.lastName}</p>
@@ -172,7 +172,7 @@ export const ProjectsPage = () => {
               <Link
                 to={`/projects/${project.id}`}
                 aria-label={`Voir le projet ${project.name}`}
-                className="p-2 text-muted hover:text-accent transition-colors"
+                className="p-3 text-muted hover:text-accent transition-colors rounded-md hover:bg-elevated -mr-1"
               >
                 <ArrowRight size={15} />
               </Link>

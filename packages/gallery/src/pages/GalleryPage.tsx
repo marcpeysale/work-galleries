@@ -67,15 +67,19 @@ export const GalleryPage = () => {
 
   return (
     <div className="min-h-screen bg-bg">
-      <header className="border-b border-border px-8 py-5 flex items-center justify-between">
+      <header className="border-b border-border px-8 py-6 md:px-14 flex items-center justify-between">
         <span className="font-display text-2xl tracking-wider">MARC PEYSALE</span>
-        <Link to="/" aria-label="Retour aux projets" className="flex items-center gap-1.5 text-xs text-muted hover:text-text-primary transition-colors uppercase tracking-widest">
+        <Link
+          to="/"
+          aria-label="Retour aux projets"
+          className="flex items-center gap-2 text-xs text-muted hover:text-text-primary transition-colors uppercase tracking-widest py-3 px-4 rounded-md hover:bg-elevated -mr-2"
+        >
           <ArrowLeft size={13} aria-hidden="true" /> Mes projets
         </Link>
       </header>
 
-      <main className="px-8 py-12 max-w-wrap mx-auto">
-        <div className="flex items-start justify-between mb-10 gap-4">
+      <main className="px-8 py-14 md:px-14 md:py-16 max-w-wrap mx-auto">
+        <div className="flex items-start justify-between mb-12 gap-6">
           <div>
             <p className="text-xs text-accent font-semibold tracking-widest uppercase mb-2">
               {String(project.month).padStart(2, '0')}/{project.year}
@@ -118,13 +122,13 @@ export const GalleryPage = () => {
         </div>
 
         {photos.length > 0 && (
-          <section className="mb-14" aria-label="Photos">
-            <div className="flex items-center gap-2 mb-5">
+          <section className="mb-16" aria-label="Photos">
+            <div className="flex items-center gap-2 mb-8">
               <ImageIcon size={15} className="text-muted" aria-hidden="true" />
               <h2 className="font-display text-2xl tracking-wider">Photos</h2>
               <span className="text-xs text-faint ml-1">({photos.length})</span>
             </div>
-            <div className="columns-2 sm:columns-3 lg:columns-4 gap-3 space-y-3">
+            <div className="columns-2 sm:columns-3 lg:columns-4 gap-6 space-y-6">
               {photos.map((photo, index) => (
                 <button
                   key={photo.id}
@@ -146,14 +150,14 @@ export const GalleryPage = () => {
 
         {videos.length > 0 && (
           <section aria-label="Vidéos">
-            <div className="flex items-center gap-2 mb-5">
+            <div className="flex items-center gap-2 mb-8">
               <Video size={15} className="text-muted" aria-hidden="true" />
               <h2 className="font-display text-2xl tracking-wider">Vidéos</h2>
               <span className="text-xs text-faint ml-1">({videos.length})</span>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
               {videos.map((video) => (
-                <div key={video.id} className="bg-elevated">
+                <div key={video.id} className="bg-elevated overflow-hidden">
                   <video
                     src={video.url}
                     controls
@@ -161,7 +165,7 @@ export const GalleryPage = () => {
                     className="w-full"
                     aria-label={video.filename}
                   />
-                  <p className="px-4 py-2 text-xs text-muted truncate">{video.filename}</p>
+                  <p className="px-6 py-4 text-xs text-muted truncate">{video.filename}</p>
                 </div>
               ))}
             </div>
@@ -169,7 +173,7 @@ export const GalleryPage = () => {
         )}
 
         {media.length === 0 && (
-          <div className="border border-border py-20 text-center">
+          <div className="border border-border py-24 px-12 text-center">
             <p className="text-muted">Votre galerie sera disponible prochainement.</p>
           </div>
         )}

@@ -28,9 +28,9 @@ export const DashboardPage = () => {
   const activeProjects = projects.filter((p) => p.status === 'in-progress' || p.status === 'post-shooting');
 
   return (
-    <div className="p-8 max-w-wrap mx-auto">
-      <div className="mb-10">
-        <p className="text-xs text-accent font-semibold tracking-widest uppercase mb-2">Tableau de bord</p>
+    <div className="max-w-wrap mx-auto space-y-10">
+      <div className="dashboard-greeting">
+        <p className="dashboard-greeting-label text-xs text-accent font-semibold tracking-widest uppercase">Tableau de bord</p>
         <h1 className="font-display text-4xl tracking-wider text-text-primary">
           Bonjour, {user?.firstName}
         </h1>
@@ -42,16 +42,19 @@ export const DashboardPage = () => {
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
         <StatCard icon={FolderOpen} label="Projets total" value={loading ? '—' : String(projects.length)} />
         <StatCard icon={FolderOpen} label="En cours" value={loading ? '—' : String(activeProjects.length)} />
         <StatCard icon={Users} label="Clients" value={loading ? '—' : String(users.length)} />
       </div>
 
-      <div className="bg-surface border border-border p-6">
-        <div className="flex items-center justify-between mb-6">
+      <div className="bg-surface border border-border p-10">
+        <div className="flex items-center justify-between mb-8">
           <h2 className="font-display text-xl tracking-wider">Projets récents</h2>
-          <Link to="/projects" className="flex items-center gap-1.5 text-xs text-accent hover:text-accent-hover transition-colors uppercase tracking-widest font-semibold">
+          <Link
+            to="/projects"
+            className="dashboard-see-all-link flex items-center gap-2 text-xs text-accent hover:text-accent-hover transition-colors uppercase tracking-widest font-semibold"
+          >
             Voir tout <ArrowRight size={12} />
           </Link>
         </div>
@@ -63,7 +66,7 @@ export const DashboardPage = () => {
         ) : (
           <div className="divide-y divide-border">
             {recentProjects.map((project) => (
-              <div key={project.id} className="flex items-center justify-between py-3.5">
+              <div key={project.id} className="flex items-center justify-between py-5">
                 <div>
                   <Link to={`/projects/${project.id}`} className="text-sm font-medium hover:text-accent transition-colors">
                     {project.name}
@@ -83,8 +86,8 @@ export const DashboardPage = () => {
 };
 
 const StatCard = ({ icon: Icon, label, value }: { icon: typeof FolderOpen; label: string; value: string }) => (
-  <div className="bg-surface border border-border p-6">
-    <div className="flex items-center gap-3 mb-3">
+  <div className="bg-surface border border-border p-10">
+    <div className="flex items-center gap-3 mb-4">
       <Icon size={16} className="text-accent" aria-hidden="true" />
       <span className="text-xs text-muted font-semibold tracking-widest uppercase">{label}</span>
     </div>

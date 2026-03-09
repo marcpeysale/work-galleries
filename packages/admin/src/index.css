@@ -19,7 +19,43 @@
 *, *::before, *::after {
   box-sizing: border-box;
   margin: 0;
-  padding: 0;
+}
+
+.sidebar-nav-link {
+  padding: 1rem 1.25rem !important;
+  margin: 0.375rem 0;
+  gap: 1rem;
+  border-radius: 0 0.375rem 0.375rem 0;
+}
+.sidebar-nav-link.is-active {
+  padding-left: 1.125rem !important;
+}
+.sidebar-user-block p {
+  margin-bottom: 1rem;
+  padding: 0 0.25rem;
+}
+.sidebar-logout-btn {
+  padding: 0.75rem 1rem !important;
+  border-radius: 0.375rem;
+  margin-left: -0.25rem;
+}
+.sidebar-logout-btn:hover {
+  background-color: var(--color-elevated);
+}
+.dashboard-greeting {
+  padding-top: 0.5rem;
+  padding-bottom: 1rem;
+}
+.dashboard-greeting .dashboard-greeting-label {
+  margin-bottom: 0.75rem;
+}
+.dashboard-see-all-link {
+  padding: 0.75rem 1rem !important;
+  border-radius: 0.375rem;
+  margin-right: -0.25rem;
+}
+.dashboard-see-all-link:hover {
+  background-color: var(--color-elevated);
 }
 
 body {

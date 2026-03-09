@@ -20,7 +20,7 @@ export const Button = ({ variant = 'primary', loading, children, className = '',
     {...props}
     disabled={disabled || loading}
     className={`
-      inline-flex items-center gap-2 px-5 py-2.5
+      inline-flex items-center gap-2 px-6 py-3
       text-xs font-semibold tracking-widest uppercase
       transition-colors duration-150 cursor-pointer
       disabled:opacity-50 disabled:cursor-not-allowed
