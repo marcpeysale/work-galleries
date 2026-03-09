@@ -17,11 +17,22 @@ export interface AuthContext {
 const parseGroupsClaim = (raw: unknown): string[] => {
   if (Array.isArray(raw)) return raw as string[];
   if (typeof raw !== 'string' || raw.length === 0) return [];
+  const trimmed = raw.trim();
+  if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
+    try {
+      const parsed = JSON.parse(trimmed);
+      if (Array.isArray(parsed)) return parsed as string[];
+    } catch {
+      // format [admin] ou [admin, viewer] sans guillemets
+    }
+    const inner = trimmed.slice(1, -1).trim();
+    return inner.length === 0 ? [] : inner.split(',').map((g) => g.trim()).filter(Boolean);
+  }
   try {
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : raw.split(',').map((g) => g.trim()).filter(Boolean);
+    const parsed = JSON.parse(trimmed);
+    return Array.isArray(parsed) ? (parsed as string[]) : trimmed.split(',').map((g) => g.trim()).filter(Boolean);
   } catch {
-    return raw.split(',').map((g) => g.trim()).filter(Boolean);
+    return trimmed.split(',').map((g) => g.trim()).filter(Boolean);
   }
 };
 

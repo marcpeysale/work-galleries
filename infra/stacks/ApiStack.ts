@@ -98,6 +98,14 @@ export class ApiStack extends cdk.Stack {
     props.mediaBucket.grantRead(zipHandler);
     props.exportsBucket.grantReadWrite(zipHandler);
 
+    const groupLookupPolicy = new iam.PolicyStatement({
+      actions: ['cognito-idp:AdminListGroupsForUser'],
+      resources: [props.userPool.userPoolArn],
+    });
+    [usersHandler, projectsHandler, mediaHandler, zipHandler].forEach((fn) =>
+      fn.addToRolePolicy(groupLookupPolicy),
+    );
+
     usersHandler.addToRolePolicy(new iam.PolicyStatement({
       actions: [
         'cognito-idp:AdminCreateUser',
