@@ -18,14 +18,6 @@ export class InfraStack extends cdk.Stack {
       bucketName: `gallery-media-${this.account}`,
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
       encryption: s3.BucketEncryption.S3_MANAGED,
-      cors: [
-        {
-          allowedMethods: [s3.HttpMethods.GET, s3.HttpMethods.PUT, s3.HttpMethods.POST],
-          allowedOrigins: ['https://admin.peysale.com', 'https://gallery.peysale.com'],
-          allowedHeaders: ['*'],
-          maxAge: 3000,
-        },
-      ],
       lifecycleRules: [
         { id: 'expire-multipart-uploads', abortIncompleteMultipartUploadAfter: cdk.Duration.days(1) },
       ],
@@ -105,6 +97,18 @@ export class InfraStack extends cdk.Stack {
         responseHeadersPolicy: cloudfront.ResponseHeadersPolicy.SECURITY_HEADERS,
       },
       priceClass: cloudfront.PriceClass.PRICE_CLASS_100,
+    });
+
+    this.mediaBucket.addCorsRule({
+      allowedMethods: [s3.HttpMethods.GET, s3.HttpMethods.PUT, s3.HttpMethods.POST],
+      allowedOrigins: [
+        'https://admin.peysale.com',
+        'https://gallery.peysale.com',
+        `https://${this.adminDistribution.distributionDomainName}`,
+        `https://${this.galleryDistribution.distributionDomainName}`,
+      ],
+      allowedHeaders: ['*'],
+      maxAge: 3000,
     });
 
     new cdk.CfnOutput(this, 'MediaBucketName', { value: this.mediaBucket.bucketName, exportName: 'GalleryMediaBucketName' });
