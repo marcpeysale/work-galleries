@@ -56,6 +56,45 @@ export const handler = async (
       return res.created(itemToProject(item), origin);
     }
 
+    if (projectId && path.includes('/users')) {
+      const userIdParam = event.pathParameters?.['userId'];
+
+      if (method === 'GET' && path.endsWith('/users')) {
+        const result = await ddb.send(new QueryCommand({
+          TableName: TABLE,
+          IndexName: 'GSI1',
+          KeyConditionExpression: 'GSI1PK = :gsi1pk AND begins_with(GSI1SK, :prefix)',
+          ExpressionAttributeValues: { ':gsi1pk': `PROJECT#${projectId}`, ':prefix': 'USER#' },
+        }));
+        const userIds = (result.Items ?? []).map((i) => (i['GSI1SK'] as string).replace('USER#', ''));
+        return res.ok(userIds, origin);
+      }
+
+      if (method === 'POST' && path.endsWith('/users')) {
+        const { userId }: { userId: string } = JSON.parse(event.body ?? '{}');
+        if (!userId) return res.badRequest('userId manquant', origin);
+        await ddb.send(new PutCommand({
+          TableName: TABLE,
+          Item: {
+            PK: `USER#${userId}`,
+            SK: `PROJECT#${projectId}`,
+            GSI1PK: `PROJECT#${projectId}`,
+            GSI1SK: `USER#${userId}`,
+            assignedAt: new Date().toISOString(),
+          },
+        }));
+        return res.created({ message: 'Accès accordé' }, origin);
+      }
+
+      if (method === 'DELETE' && userIdParam) {
+        await ddb.send(new DeleteCommand({
+          TableName: TABLE,
+          Key: { PK: `USER#${userIdParam}`, SK: `PROJECT#${projectId}` },
+        }));
+        return res.noContent(origin);
+      }
+    }
+
     if (method === 'GET' && projectId && path.startsWith('/admin/projects/')) {
       const result = await ddb.send(new GetCommand({
         TableName: TABLE,

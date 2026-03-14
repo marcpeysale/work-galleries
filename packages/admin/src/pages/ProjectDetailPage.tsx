@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Upload, Trash2, ImageIcon, Video } from 'lucide-react';
+import { ArrowLeft, Upload, Trash2, ImageIcon, Video, Users, UserCheck, UserX } from 'lucide-react';
 import { api } from '../lib/api';
 import { Select } from '../components/ui/Select';
-import type { Project, Media } from '@gallery/shared';
+import type { Project, Media, User } from '@gallery/shared';
 import { PROJECT_STATUS_LABELS } from '@gallery/shared';
+
+type BasicUser = Pick<User, 'id' | 'email' | 'firstName' | 'lastName' | 'status'>;
 
 const STATUS_OPTIONS = Object.entries(PROJECT_STATUS_LABELS).map(([value, label]) => ({ value, label }));
 
@@ -20,6 +22,10 @@ export const ProjectDetailPage = () => {
   const [status, setStatus] = useState<Project['status']>('created');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const [allUsers, setAllUsers] = useState<BasicUser[]>([]);
+  const [assignedUserIds, setAssignedUserIds] = useState<string[]>([]);
+  const [togglingUserId, setTogglingUserId] = useState<string | null>(null);
+
   const fetchData = async () => {
     if (!projectId) return;
     const [p, m] = await Promise.all([
@@ -31,9 +37,35 @@ export const ProjectDetailPage = () => {
     setMedia(m);
   };
 
+  const fetchAccess = async () => {
+    if (!projectId) return;
+    const [usersResult, assignedResult] = await Promise.allSettled([
+      api.get<BasicUser[]>('/admin/users'),
+      api.get<string[]>(`/admin/projects/${projectId}/users`),
+    ]);
+    if (usersResult.status === 'fulfilled') setAllUsers(usersResult.value);
+    if (assignedResult.status === 'fulfilled') setAssignedUserIds(assignedResult.value);
+  };
+
   useEffect(() => {
-    fetchData().finally(() => setLoading(false));
+    Promise.all([fetchData(), fetchAccess()]).finally(() => setLoading(false));
   }, [projectId]);
+
+  const handleToggleAccess = async (userId: string, hasAccess: boolean) => {
+    if (!projectId) return;
+    setTogglingUserId(userId);
+    try {
+      if (hasAccess) {
+        await api.delete(`/admin/projects/${projectId}/users/${userId}`);
+        setAssignedUserIds((prev) => prev.filter((id) => id !== userId));
+      } else {
+        await api.post(`/admin/projects/${projectId}/users`, { userId });
+        setAssignedUserIds((prev) => [...prev, userId]);
+      }
+    } finally {
+      setTogglingUserId(null);
+    }
+  };
 
   const handleStatusChange = async (newStatus: string) => {
     if (!projectId) return;
@@ -125,6 +157,58 @@ export const ProjectDetailPage = () => {
             </label>
           </div>
         </div>
+      </div>
+
+      <div className="mb-14">
+        <div className="flex items-center gap-2 mb-6">
+          <Users size={15} className="text-muted" aria-hidden="true" />
+          <h2 className="font-display text-xl tracking-wider">Accès clients</h2>
+          <span className="text-xs text-faint ml-1">({assignedUserIds.length} actif{assignedUserIds.length !== 1 ? 's' : ''})</span>
+        </div>
+        {allUsers.length === 0 ? (
+          <div className="bg-surface border border-dashed border-border flex flex-col items-center justify-center py-16 px-12 text-center">
+            <Users size={28} className="text-faint mb-4" aria-hidden="true" />
+            <p className="text-muted text-sm">Aucun utilisateur client dans le système.</p>
+            <p className="text-faint text-xs mt-1">Créez des clients depuis la page Utilisateurs pour pouvoir leur accorder l'accès.</p>
+          </div>
+        ) : (
+          <div className="bg-surface border border-border divide-y divide-border">
+            {allUsers.map((user) => {
+              const hasAccess = assignedUserIds.includes(user.id);
+              const isToggling = togglingUserId === user.id;
+              return (
+                <div key={user.id} className="flex items-center justify-between px-8 py-5">
+                  <div className="flex items-center gap-4">
+                    <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${hasAccess ? 'bg-green-400' : 'bg-border'}`} aria-hidden="true" />
+                    <div>
+                      <p className="text-sm">{user.firstName} {user.lastName}</p>
+                      <p className="text-xs text-muted mt-0.5">{user.email}</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => handleToggleAccess(user.id, hasAccess)}
+                    disabled={isToggling}
+                    aria-label={hasAccess ? `Révoquer l'accès de ${user.firstName} ${user.lastName}` : `Accorder l'accès à ${user.firstName} ${user.lastName}`}
+                    className={`flex items-center gap-2 px-4 py-2 text-xs font-semibold tracking-widest uppercase transition-colors disabled:opacity-50 ${
+                      hasAccess
+                        ? 'text-green-400 border border-green-900/50 bg-green-900/10 hover:bg-red-900/10 hover:text-red-400 hover:border-red-900/50'
+                        : 'bg-accent hover:bg-accent-hover text-white border border-transparent'
+                    }`}
+                  >
+                    {isToggling ? (
+                      <span className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" aria-hidden="true" />
+                    ) : hasAccess ? (
+                      <UserCheck size={13} aria-hidden="true" />
+                    ) : (
+                      <UserX size={13} aria-hidden="true" />
+                    )}
+                    {hasAccess ? 'Accès accordé' : 'Accorder l\'accès'}
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {media.length === 0 ? (
