@@ -37,7 +37,7 @@ export class AuthStack extends cdk.Stack {
           <p>Bonjour {username},</p>
           <p>Marc Peysale vous invite à accéder à votre galerie personnelle.</p>
           <p>Votre mot de passe temporaire est : <strong>{####}</strong></p>
-          <p>Connectez-vous sur <a href="https://gallery.peysale.com">gallery.peysale.com</a></p>
+          <p>Connectez-vous sur <a href="https://galeries.peysale.com">galeries.peysale.com</a></p>
           <p>Vous serez invité à changer votre mot de passe à la première connexion.</p>
         `,
         smsMessage: 'Bonjour {username}, votre code d\'accès Marc Peysale : {####}',

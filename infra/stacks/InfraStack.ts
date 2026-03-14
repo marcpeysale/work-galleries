@@ -103,7 +103,7 @@ export class InfraStack extends cdk.Stack {
       allowedMethods: [s3.HttpMethods.GET, s3.HttpMethods.PUT, s3.HttpMethods.POST],
       allowedOrigins: [
         'https://admin.peysale.com',
-        'https://gallery.peysale.com',
+        'https://galeries.peysale.com',
         `https://${this.adminDistribution.distributionDomainName}`,
         `https://${this.galleryDistribution.distributionDomainName}`,
       ],

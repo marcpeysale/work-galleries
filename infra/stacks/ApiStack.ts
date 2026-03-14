@@ -42,7 +42,7 @@ export class ApiStack extends cdk.Stack {
 
     const allowedOrigins = [
       'https://admin.peysale.com',
-      'https://gallery.peysale.com',
+      'https://galeries.peysale.com',
       `https://${props.adminDistribution.distributionDomainName}`,
       `https://${props.galleryDistribution.distributionDomainName}`,
       'http://localhost:5173',
