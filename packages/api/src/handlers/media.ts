@@ -5,6 +5,7 @@ import { PutObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
 import { PutCommand, QueryCommand, DeleteCommand } from '@aws-sdk/lib-dynamodb';
 import { ddb, TABLE } from '../lib/dynamo';
 import { getAuthContext } from '../lib/auth';
+import { getValidInvite, touchInvite } from '../lib/invites';
 import * as res from '../lib/response';
 import type { MediaType } from '@gallery/shared';
 import { randomUUID } from 'crypto';
@@ -15,17 +16,50 @@ const MEDIA_DOMAIN = process.env.MEDIA_DOMAIN ?? '';
 const UPLOAD_URL_TTL = 300;
 const SIGNED_URL_TTL = 3600;
 
+const listProjectMedia = async (projectId: string): Promise<Record<string, unknown>[]> => {
+  const result = await ddb.send(new QueryCommand({
+    TableName: TABLE,
+    KeyConditionExpression: 'PK = :pk AND begins_with(SK, :sk)',
+    ExpressionAttributeValues: { ':pk': `PROJECT#${projectId}`, ':sk': 'MEDIA#' },
+  }));
+
+  const mediaItems = await Promise.all(
+    (result.Items ?? []).map(async (item): Promise<Record<string, unknown>> => {
+      const url = MEDIA_DOMAIN
+        ? `https://${MEDIA_DOMAIN}/${item['s3Key']}?token=${randomUUID()}`
+        : await getSignedUrl(
+            s3,
+            new GetObjectCommand({ Bucket: MEDIA_BUCKET, Key: item['s3Key'] as string }),
+            { expiresIn: SIGNED_URL_TTL },
+          );
+      return { ...item, url };
+    }),
+  );
+
+  return mediaItems.sort((a, b) => (a['order'] as number) - (b['order'] as number));
+};
+
 export const handler = async (
   event: APIGatewayProxyEventV2WithJWTAuthorizer,
 ): Promise<APIGatewayProxyResultV2> => {
   const origin = event.headers['origin'];
 
   try {
-    const auth = await getAuthContext(event);
     const method = event.requestContext.http.method;
     const path = event.requestContext.http.path;
     const projectId = event.pathParameters?.['projectId'];
     const mediaId = event.pathParameters?.['mediaId'];
+    const inviteToken = event.pathParameters?.['token'];
+
+    if (path.startsWith('/invite/')) {
+      if (method !== 'GET' || !projectId) return res.notFound(origin);
+      const invite = await getValidInvite(inviteToken);
+      if (!invite || !invite.projectIds.includes(projectId)) return res.forbidden(origin);
+      await touchInvite(invite.token);
+      return res.ok(await listProjectMedia(projectId), origin);
+    }
+
+    const auth = await getAuthContext(event);
     if (method === 'POST' && projectId && path.endsWith('/upload-url')) {
       if (!auth.isAdmin) return res.forbidden(origin);
       const { filename, type, contentType }: { filename: string; type: MediaType; contentType: string } =
@@ -72,26 +106,7 @@ export const handler = async (
         if (!accessCheck.Items?.length) return res.forbidden(origin);
       }
 
-      const result = await ddb.send(new QueryCommand({
-        TableName: TABLE,
-        KeyConditionExpression: 'PK = :pk AND begins_with(SK, :sk)',
-        ExpressionAttributeValues: { ':pk': `PROJECT#${projectId}`, ':sk': 'MEDIA#' },
-      }));
-
-      const mediaItems = await Promise.all(
-        (result.Items ?? []).map(async (item): Promise<Record<string, unknown>> => {
-          const url = MEDIA_DOMAIN
-            ? `https://${MEDIA_DOMAIN}/${item['s3Key']}?token=${randomUUID()}`
-            : await getSignedUrl(
-                s3,
-                new GetObjectCommand({ Bucket: MEDIA_BUCKET, Key: item['s3Key'] as string }),
-                { expiresIn: SIGNED_URL_TTL },
-              );
-          return { ...item, url };
-        }),
-      );
-
-      return res.ok(mediaItems.sort((a, b) => (a['order'] as number) - (b['order'] as number)), origin);
+      return res.ok(await listProjectMedia(projectId), origin);
     }
 
     if (method === 'DELETE' && projectId && mediaId) {

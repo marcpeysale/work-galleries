@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Upload, Trash2, ImageIcon, Video, Users, UserCheck, UserX } from 'lucide-react';
+import { ArrowLeft, Upload, Trash2, ImageIcon, Video, Users, UserCheck, UserX, Link2, Copy, Check } from 'lucide-react';
 import { api } from '../lib/api';
+import { GALLERY_URL } from '../lib/amplify';
 import { Select } from '../components/ui/Select';
-import type { Project, Media, User } from '@gallery/shared';
+import { Button } from '../components/ui/Button';
+import type { Project, Media, User, Invite } from '@gallery/shared';
 import { PROJECT_STATUS_LABELS } from '@gallery/shared';
 
 type BasicUser = Pick<User, 'id' | 'email' | 'firstName' | 'lastName' | 'status'>;
@@ -25,6 +27,10 @@ export const ProjectDetailPage = () => {
   const [allUsers, setAllUsers] = useState<BasicUser[]>([]);
   const [assignedUserIds, setAssignedUserIds] = useState<string[]>([]);
   const [togglingUserId, setTogglingUserId] = useState<string | null>(null);
+
+  const [creatingInvite, setCreatingInvite] = useState(false);
+  const [inviteUrl, setInviteUrl] = useState<string | null>(null);
+  const [inviteCopied, setInviteCopied] = useState(false);
 
   const fetchData = async () => {
     if (!projectId) return;
@@ -65,6 +71,28 @@ export const ProjectDetailPage = () => {
     } finally {
       setTogglingUserId(null);
     }
+  };
+
+  const handleCreateInviteLink = async () => {
+    if (!projectId) return;
+    setCreatingInvite(true);
+    try {
+      const invite = await api.post<Invite>('/admin/invites', {
+        projectIds: [projectId],
+        label: project ? `${project.clientInfo.firstName} ${project.clientInfo.lastName}` : undefined,
+      });
+      setInviteUrl(`${GALLERY_URL}/invite/${invite.token}`);
+      setInviteCopied(false);
+    } finally {
+      setCreatingInvite(false);
+    }
+  };
+
+  const handleCopyInviteLink = async () => {
+    if (!inviteUrl) return;
+    await navigator.clipboard.writeText(inviteUrl);
+    setInviteCopied(true);
+    setTimeout(() => setInviteCopied(false), 2000);
   };
 
   const handleStatusChange = async (newStatus: string) => {
@@ -164,7 +192,21 @@ export const ProjectDetailPage = () => {
           <Users size={15} className="text-muted" aria-hidden="true" />
           <h2 className="font-display text-xl tracking-wider">Accès clients</h2>
           <span className="text-xs text-faint ml-1">({assignedUserIds.length} actif{assignedUserIds.length !== 1 ? 's' : ''})</span>
+          <Button variant="secondary" onClick={handleCreateInviteLink} loading={creatingInvite} className="ml-auto">
+            <Link2 size={13} aria-hidden="true" /> Lien d'invitation
+          </Button>
         </div>
+
+        {inviteUrl && (
+          <div className="flex items-center justify-between gap-4 bg-elevated border border-border px-5 py-3 mb-6">
+            <code className="text-xs text-muted truncate">{inviteUrl}</code>
+            <Button variant="secondary" onClick={handleCopyInviteLink} className="shrink-0">
+              {inviteCopied ? <Check size={13} /> : <Copy size={13} />}
+              {inviteCopied ? 'Copié' : 'Copier'}
+            </Button>
+          </div>
+        )}
+
         {allUsers.length === 0 ? (
           <div className="bg-surface border border-dashed border-border flex flex-col items-center justify-center py-16 px-12 text-center">
             <Users size={28} className="text-faint mb-4" aria-hidden="true" />

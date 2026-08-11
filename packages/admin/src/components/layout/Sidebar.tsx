@@ -1,11 +1,12 @@
 import { NavLink } from 'react-router-dom';
-import { Users, FolderOpen, LogOut, LayoutDashboard } from 'lucide-react';
+import { Users, FolderOpen, LogOut, LayoutDashboard, Link2 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
 const navItems = [
   { to: '/', icon: LayoutDashboard, label: 'Tableau de bord' },
   { to: '/projects', icon: FolderOpen, label: 'Projets' },
   { to: '/users', icon: Users, label: 'Utilisateurs' },
+  { to: '/invites', icon: Link2, label: 'Invitations' },
 ];
 
 export const Sidebar = () => {

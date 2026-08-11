@@ -4,6 +4,7 @@ import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { QueryCommand, GetCommand } from '@aws-sdk/lib-dynamodb';
 import { ddb, TABLE } from '../lib/dynamo';
 import { getAuthContext } from '../lib/auth';
+import { getValidInvite, touchInvite } from '../lib/invites';
 import * as res from '../lib/response';
 import archiver from 'archiver';
 import { PassThrough, Readable } from 'stream';
@@ -20,17 +21,24 @@ export const handler = async (
   const origin = event.headers['origin'];
 
   try {
-    const auth = await getAuthContext(event);
+    const path = event.requestContext.http.path;
     const projectId = event.pathParameters?.['projectId'];
 
     if (!projectId) return res.badRequest('projectId manquant', origin);
 
-    if (!auth.isAdmin) {
-      const accessCheck = await ddb.send(new GetCommand({
-        TableName: TABLE,
-        Key: { PK: `USER#${auth.sub}`, SK: `PROJECT#${projectId}` },
-      }));
-      if (!accessCheck.Item) return res.forbidden(origin);
+    if (path.startsWith('/invite/')) {
+      const invite = await getValidInvite(event.pathParameters?.['token']);
+      if (!invite || !invite.projectIds.includes(projectId)) return res.forbidden(origin);
+      await touchInvite(invite.token);
+    } else {
+      const auth = await getAuthContext(event);
+      if (!auth.isAdmin) {
+        const accessCheck = await ddb.send(new GetCommand({
+          TableName: TABLE,
+          Key: { PK: `USER#${auth.sub}`, SK: `PROJECT#${projectId}` },
+        }));
+        if (!accessCheck.Item) return res.forbidden(origin);
+      }
     }
 
     const mediaResult = await ddb.send(new QueryCommand({

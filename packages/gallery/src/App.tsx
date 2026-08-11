@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { LoginPage } from './pages/LoginPage';
 import { ProjectsPage } from './pages/ProjectsPage';
 import { GalleryPage } from './pages/GalleryPage';
+import { InvitePage } from './pages/InvitePage';
 import type { ReactNode } from 'react';
 
 const RequireAuth = ({ children }: { children: ReactNode }) => {
@@ -20,6 +21,7 @@ const AppRoutes = () => {
   return (
     <Routes>
       <Route path="/login" element={user ? <Navigate to="/" replace /> : <LoginPage />} />
+      <Route path="/invite/:token" element={<InvitePage />} />
       <Route path="/" element={<RequireAuth><ProjectsPage /></RequireAuth>} />
       <Route path="/projects/:projectId" element={<RequireAuth><GalleryPage /></RequireAuth>} />
       <Route path="*" element={<Navigate to="/" replace />} />

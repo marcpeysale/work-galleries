@@ -2,6 +2,7 @@ import type { APIGatewayProxyEventV2WithJWTAuthorizer, APIGatewayProxyResultV2 }
 import { PutCommand, GetCommand, QueryCommand, UpdateCommand, DeleteCommand } from '@aws-sdk/lib-dynamodb';
 import { ddb, TABLE } from '../lib/dynamo';
 import { getAuthContext } from '../lib/auth';
+import { getValidInvite, touchInvite } from '../lib/invites';
 import * as res from '../lib/response';
 import type { CreateProjectInput, UpdateProjectInput } from '@gallery/shared';
 import { randomUUID } from 'crypto';
@@ -12,10 +13,39 @@ export const handler = async (
   const origin = event.headers['origin'];
 
   try {
-    const auth = await getAuthContext(event);
     const method = event.requestContext.http.method;
     const path = event.requestContext.http.path;
     const projectId = event.pathParameters?.['projectId'];
+    const inviteToken = event.pathParameters?.['token'];
+
+    if (path.startsWith('/invite/')) {
+      const invite = await getValidInvite(inviteToken);
+      if (!invite) return res.forbidden(origin);
+
+      if (method === 'GET' && path.endsWith('/projects')) {
+        await touchInvite(invite.token);
+        const projects = await Promise.all(
+          invite.projectIds.map((pid) =>
+            ddb.send(new GetCommand({ TableName: TABLE, Key: { PK: `PROJECT#${pid}`, SK: 'METADATA' } }))
+          )
+        );
+        return res.ok(projects.filter((r) => r.Item).map((r) => itemToProject(r.Item!)), origin);
+      }
+
+      if (method === 'GET' && projectId) {
+        if (!invite.projectIds.includes(projectId)) return res.forbidden(origin);
+        const result = await ddb.send(new GetCommand({
+          TableName: TABLE,
+          Key: { PK: `PROJECT#${projectId}`, SK: 'METADATA' },
+        }));
+        if (!result.Item) return res.notFound(origin);
+        return res.ok(itemToProject(result.Item), origin);
+      }
+
+      return res.notFound(origin);
+    }
+
+    const auth = await getAuthContext(event);
 
     if (path.startsWith('/admin') && !auth.isAdmin) return res.forbidden(origin);
 

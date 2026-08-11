@@ -1,7 +1,7 @@
 import { build } from 'esbuild';
 import { rmSync, mkdirSync } from 'fs';
 
-const handlers = ['users', 'projects', 'media', 'zip'];
+const handlers = ['users', 'projects', 'media', 'zip', 'invites'];
 
 rmSync('dist', { recursive: true, force: true });
 mkdirSync('dist', { recursive: true });

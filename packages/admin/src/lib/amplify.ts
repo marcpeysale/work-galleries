@@ -11,3 +11,4 @@ Amplify.configure({
 });
 
 export const API_URL = import.meta.env.VITE_API_URL as string;
+export const GALLERY_URL = import.meta.env.VITE_GALLERY_URL as string;

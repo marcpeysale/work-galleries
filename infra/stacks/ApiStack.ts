@@ -99,11 +99,20 @@ export class ApiStack extends cdk.Stack {
       memorySize: 3008,
     });
 
+    const invitesHandler = new lambda.Function(this, 'InvitesHandler', {
+      ...lambdaDefaults,
+      functionName: 'gallery-invites',
+      handler: 'invites.handler',
+      code: lambda.Code.fromAsset('../packages/api/dist'),
+      description: "Gestion des liens d'invitation clients",
+    });
+
     table.grantReadWriteData(usersHandler);
     table.grantReadWriteData(projectsHandler);
     table.grantReadData(mediaHandler);
     table.grantReadWriteData(mediaHandler);
-    table.grantReadData(zipHandler);
+    table.grantReadWriteData(zipHandler);
+    table.grantReadWriteData(invitesHandler);
 
     props.mediaBucket.grantReadWrite(mediaHandler);
     props.mediaBucket.grantRead(zipHandler);
@@ -113,7 +122,7 @@ export class ApiStack extends cdk.Stack {
       actions: ['cognito-idp:AdminListGroupsForUser'],
       resources: [props.userPool.userPoolArn],
     });
-    [usersHandler, projectsHandler, mediaHandler, zipHandler].forEach((fn) =>
+    [usersHandler, projectsHandler, mediaHandler, zipHandler, invitesHandler].forEach((fn) =>
       fn.addToRolePolicy(groupLookupPolicy),
     );
 
@@ -156,6 +165,7 @@ export class ApiStack extends cdk.Stack {
     const projectsIntegration = new integrations.HttpLambdaIntegration('ProjectsIntegration', projectsHandler);
     const mediaIntegration = new integrations.HttpLambdaIntegration('MediaIntegration', mediaHandler);
     const zipIntegration = new integrations.HttpLambdaIntegration('ZipIntegration', zipHandler);
+    const invitesIntegration = new integrations.HttpLambdaIntegration('InvitesIntegration', invitesHandler);
 
     const adminRoutes: Array<{ method: apigateway.HttpMethod; path: string; integration: integrations.HttpLambdaIntegration }> = [
       { method: apigateway.HttpMethod.GET, path: '/admin/users', integration: usersIntegration },
@@ -175,6 +185,9 @@ export class ApiStack extends cdk.Stack {
       { method: apigateway.HttpMethod.DELETE, path: '/admin/projects/{projectId}', integration: projectsIntegration },
       { method: apigateway.HttpMethod.POST, path: '/admin/projects/{projectId}/media/upload-url', integration: mediaIntegration },
       { method: apigateway.HttpMethod.DELETE, path: '/admin/projects/{projectId}/media/{mediaId}', integration: mediaIntegration },
+      { method: apigateway.HttpMethod.GET, path: '/admin/invites', integration: invitesIntegration },
+      { method: apigateway.HttpMethod.POST, path: '/admin/invites', integration: invitesIntegration },
+      { method: apigateway.HttpMethod.DELETE, path: '/admin/invites/{token}', integration: invitesIntegration },
     ];
 
     const galleryRoutes: Array<{ method: apigateway.HttpMethod; path: string; integration: integrations.HttpLambdaIntegration }> = [
@@ -190,6 +203,22 @@ export class ApiStack extends cdk.Stack {
         methods: [route.method],
         integration: route.integration,
         authorizer,
+      });
+    }
+
+    const inviteRoutes: Array<{ method: apigateway.HttpMethod; path: string; integration: integrations.HttpLambdaIntegration }> = [
+      { method: apigateway.HttpMethod.GET, path: '/invite/{token}', integration: invitesIntegration },
+      { method: apigateway.HttpMethod.GET, path: '/invite/{token}/projects', integration: projectsIntegration },
+      { method: apigateway.HttpMethod.GET, path: '/invite/{token}/projects/{projectId}', integration: projectsIntegration },
+      { method: apigateway.HttpMethod.GET, path: '/invite/{token}/projects/{projectId}/media', integration: mediaIntegration },
+      { method: apigateway.HttpMethod.POST, path: '/invite/{token}/projects/{projectId}/export', integration: zipIntegration },
+    ];
+
+    for (const route of inviteRoutes) {
+      api.addRoutes({
+        path: route.path,
+        methods: [route.method],
+        integration: route.integration,
       });
     }
 
