@@ -10,6 +10,10 @@ export interface Media {
   order: number;
   uploadedAt: string;
   url?: string;
+  thumbnailS3Key?: string;
+  thumbnailUrl?: string;
+  thumbnailWidth?: number;
+  thumbnailHeight?: number;
 }
 
 export interface UploadUrlResponse {

@@ -1,14 +1,18 @@
 import * as cdk from 'aws-cdk-lib';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
+import * as nodejs from 'aws-cdk-lib/aws-lambda-nodejs';
 import * as apigateway from 'aws-cdk-lib/aws-apigatewayv2';
 import * as integrations from 'aws-cdk-lib/aws-apigatewayv2-integrations';
 import * as authorizers from 'aws-cdk-lib/aws-apigatewayv2-authorizers';
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
+import * as events from 'aws-cdk-lib/aws-events';
+import * as targets from 'aws-cdk-lib/aws-events-targets';
 import * as cognito from 'aws-cdk-lib/aws-cognito';
 import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
 import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import { Construct } from 'constructs';
+import * as path from 'path';
 
 interface ApiStackProps extends cdk.StackProps {
   userPool: cognito.UserPool;
@@ -17,6 +21,7 @@ interface ApiStackProps extends cdk.StackProps {
   exportsBucket: s3.Bucket;
   adminDistribution: cloudfront.Distribution;
   galleryDistribution: cloudfront.Distribution;
+  mediaDistribution: cloudfront.Distribution;
 }
 
 export class ApiStack extends cdk.Stack {
@@ -55,6 +60,7 @@ export class ApiStack extends cdk.Stack {
       USER_POOL_ID: props.userPool.userPoolId,
       REGION: this.region,
       ALLOWED_ORIGINS: allowedOrigins.join(','),
+      MEDIA_DOMAIN: props.mediaDistribution.distributionDomainName,
     };
 
     const lambdaDefaults = {
@@ -107,16 +113,57 @@ export class ApiStack extends cdk.Stack {
       description: "Gestion des liens d'invitation clients",
     });
 
+    const thumbnailsHandler = new nodejs.NodejsFunction(this, 'ThumbnailsHandler', {
+      functionName: 'gallery-thumbnails',
+      runtime: lambda.Runtime.NODEJS_24_X,
+      architecture: lambda.Architecture.X86_64,
+      entry: path.resolve(__dirname, '../../packages/api/src/handlers/thumbnails.ts'),
+      handler: 'handler',
+      depsLockFilePath: path.resolve(__dirname, '../../pnpm-lock.yaml'),
+      projectRoot: path.resolve(__dirname, '../..'),
+      environment: {
+        TABLE_NAME: table.tableName,
+        REGION: this.region,
+      },
+      timeout: cdk.Duration.minutes(1),
+      memorySize: 1536,
+      bundling: {
+        target: 'node24',
+        nodeModules: ['sharp'],
+        forceDockerBundling: true,
+        minify: true,
+        sourceMap: false,
+      },
+      description: 'Génération des miniatures WebP',
+    });
+
     table.grantReadWriteData(usersHandler);
     table.grantReadWriteData(projectsHandler);
     table.grantReadData(mediaHandler);
     table.grantReadWriteData(mediaHandler);
     table.grantReadWriteData(zipHandler);
     table.grantReadWriteData(invitesHandler);
+    table.grantReadWriteData(thumbnailsHandler);
 
     props.mediaBucket.grantReadWrite(mediaHandler);
     props.mediaBucket.grantRead(zipHandler);
+    props.mediaBucket.grantReadWrite(thumbnailsHandler);
     props.exportsBucket.grantReadWrite(zipHandler);
+
+    const thumbnailRule = new events.Rule(this, 'ThumbnailObjectCreatedRule', {
+      eventPattern: {
+        source: ['aws.s3'],
+        detailType: ['Object Created'],
+        detail: {
+          bucket: { name: [props.mediaBucket.bucketName] },
+          object: { key: [{ wildcard: 'projects/*/photos/*' }] },
+        },
+      },
+    });
+    thumbnailRule.addTarget(new targets.LambdaFunction(thumbnailsHandler, {
+      retryAttempts: 2,
+      maxEventAge: cdk.Duration.hours(2),
+    }));
 
     const groupLookupPolicy = new iam.PolicyStatement({
       actions: ['cognito-idp:AdminListGroupsForUser'],

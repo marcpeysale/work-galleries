@@ -16,6 +16,18 @@ const MEDIA_DOMAIN = process.env.MEDIA_DOMAIN ?? '';
 const UPLOAD_URL_TTL = 300;
 const SIGNED_URL_TTL = 3600;
 
+const getMediaUrl = async (s3Key: string): Promise<string> => {
+  if (MEDIA_DOMAIN) {
+    const encodedKey = s3Key.split('/').map(encodeURIComponent).join('/');
+    return `https://${MEDIA_DOMAIN}/${encodedKey}`;
+  }
+  return getSignedUrl(
+    s3,
+    new GetObjectCommand({ Bucket: MEDIA_BUCKET, Key: s3Key }),
+    { expiresIn: SIGNED_URL_TTL },
+  );
+};
+
 const listProjectMedia = async (projectId: string): Promise<Record<string, unknown>[]> => {
   const result = await ddb.send(new QueryCommand({
     TableName: TABLE,
@@ -25,14 +37,10 @@ const listProjectMedia = async (projectId: string): Promise<Record<string, unkno
 
   const mediaItems = await Promise.all(
     (result.Items ?? []).map(async (item): Promise<Record<string, unknown>> => {
-      const url = MEDIA_DOMAIN
-        ? `https://${MEDIA_DOMAIN}/${item['s3Key']}?token=${randomUUID()}`
-        : await getSignedUrl(
-            s3,
-            new GetObjectCommand({ Bucket: MEDIA_BUCKET, Key: item['s3Key'] as string }),
-            { expiresIn: SIGNED_URL_TTL },
-          );
-      return { ...item, url };
+      const url = await getMediaUrl(item['s3Key'] as string);
+      const thumbnailS3Key = item['thumbnailS3Key'] as string | undefined;
+      const thumbnailUrl = thumbnailS3Key ? await getMediaUrl(thumbnailS3Key) : undefined;
+      return { ...item, url, thumbnailUrl };
     }),
   );
 
@@ -119,7 +127,13 @@ export const handler = async (
       const item = result.Items?.[0];
       if (!item) return res.notFound(origin);
 
-      await s3.send(new DeleteObjectCommand({ Bucket: MEDIA_BUCKET, Key: item['s3Key'] as string }));
+      const thumbnailS3Key = item['thumbnailS3Key'] as string | undefined;
+      await Promise.all([
+        s3.send(new DeleteObjectCommand({ Bucket: MEDIA_BUCKET, Key: item['s3Key'] as string })),
+        thumbnailS3Key
+          ? s3.send(new DeleteObjectCommand({ Bucket: MEDIA_BUCKET, Key: thumbnailS3Key }))
+          : Promise.resolve(),
+      ]);
       await ddb.send(new DeleteCommand({
         TableName: TABLE,
         Key: { PK: `PROJECT#${projectId}`, SK: `MEDIA#${mediaId}` },

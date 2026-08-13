@@ -297,10 +297,13 @@ const MediaSection = ({
         <div key={item.id} className="relative group aspect-square bg-elevated overflow-hidden rounded-sm">
           {item.type === 'photo' ? (
             <img
-              src={item.url}
+              src={item.thumbnailUrl ?? item.url}
               alt={item.filename}
               className="w-full h-full object-cover"
               loading="lazy"
+              decoding="async"
+              width={item.thumbnailWidth}
+              height={item.thumbnailHeight}
             />
           ) : (
             <video

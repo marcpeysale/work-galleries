@@ -23,6 +23,7 @@ const apiStack = new ApiStack(app, 'GalleryApiStack', {
   exportsBucket: infraStack.exportsBucket,
   adminDistribution: infraStack.adminDistribution,
   galleryDistribution: infraStack.galleryDistribution,
+  mediaDistribution: infraStack.mediaDistribution,
 });
 apiStack.addDependency(authStack);
 apiStack.addDependency(infraStack);

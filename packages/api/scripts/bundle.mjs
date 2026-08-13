@@ -12,7 +12,7 @@ await Promise.all(
       entryPoints: [`src/handlers/${handler}.ts`],
       bundle: true,
       platform: 'node',
-      target: 'node20',
+      target: 'node24',
       format: 'cjs',
       outfile: `dist/${handler}.js`,
       sourcemap: false,

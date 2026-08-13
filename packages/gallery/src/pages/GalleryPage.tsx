@@ -137,9 +137,12 @@ export const GalleryPage = () => {
                   className="w-full block overflow-hidden group cursor-zoom-in focus:outline-none focus:ring-2 focus:ring-accent"
                 >
                   <img
-                    src={photo.url}
+                    src={photo.thumbnailUrl ?? photo.url}
                     alt={photo.filename}
                     loading="lazy"
+                    decoding="async"
+                    width={photo.thumbnailWidth}
+                    height={photo.thumbnailHeight}
                     className="w-full object-cover transition-transform duration-500 group-hover:scale-105"
                   />
                 </button>

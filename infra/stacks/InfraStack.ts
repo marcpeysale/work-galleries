@@ -18,6 +18,7 @@ export class InfraStack extends cdk.Stack {
       bucketName: `gallery-media-${this.account}`,
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
       encryption: s3.BucketEncryption.S3_MANAGED,
+      eventBridgeEnabled: true,
       lifecycleRules: [
         { id: 'expire-multipart-uploads', abortIncompleteMultipartUploadAfter: cdk.Duration.days(1) },
       ],
